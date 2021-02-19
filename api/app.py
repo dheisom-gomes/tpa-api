@@ -1,4 +1,5 @@
 from os import environ
+from re import findall
 from flask import Flask, jsonify, request
 import scrapping
 
@@ -20,16 +21,15 @@ def getConsoles():
     return jsonify({'ok': True, 'result': consoles}), 200
 
 
-@app.route("/api/v1/consoles/<int:id>")
+@app.route("/api/v1/consoles/<int:id>", methods=["GET"])
 def getGames(id):
     global games, gamesRequests, consoles
-    if len(consoles) < id:
+    if len(consoles) < (id+1):
         return jsonify({'ok': False, 'message': 'Console not found'}), 404
     try:
         offset: int = int(request.args.get("offset", 0))
         limit: int = int(request.args.get("limit", 200)) + offset
-    except Exception as error:
-        print(error)
+    except Exception:
         return jsonify({'ok': False, 'message': 'Invalid "offset" or "limit"'}), 400
     if gamesRequests.get(id, 0) in (0, 10):
         games[id] = scrapping.getGames(consoles[id]["url"])
@@ -37,6 +37,31 @@ def getGames(id):
     else:
         gamesRequests[id] += 1
     return jsonify({'ok': True, 'result': games[id][offset:limit]}), 200
+
+
+@app.route("/api/v1/search/<int:id>", methods=["GET"])
+def searchGame(id):
+    global games, consoles, gamesRequests
+    if len(consoles) < (id+1):
+        return jsonify({'ok': False, 'message': 'Console not found'}), 400
+    try:
+        query = request.args.get("query").strip().lower()
+    except Exception:
+        return jsonify({'ok': False, 'message': '"query" parameter not informed'}), 400
+    if not query:
+        return jsonify({'ok': False, 'message': '"query" parameter cont\'t be blank'}), 400
+    if not id in games or gamesRequests in (0, 10):
+        games[id] = scrapping.getGames(consoles[id]["url"])
+        gamesRequests[id] = 1
+    else:
+        gamesRequests[id] += 1
+    result = []
+    for game in games[id]:
+        if findall(query, game["name"].lower()):
+            result.append(game)
+    if not result:
+        return jsonify({'ok': False, 'message': 'This search did not return a result'}), 400
+    return jsonify({'ok': True, 'result': result}), 200
 
 
 @app.errorhandler(500)

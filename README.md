@@ -18,5 +18,15 @@ Sem argumentos
 
 Argumentos:
 
-    * `offset` - De onde deve começar(o padrão é 0 que é o inicio);
-    * `limit` - Quantos jogos devem ser devolvidos(o padrão é 200).
+    * offset - De onde deve começar(o padrão é 0 que é o inicio);
+    * limit - Quantos jogos devem ser devolvidos(o padrão é 200).
+
+### Fazer uma pesquisa por jogos
+
+`GET /api/v1/search/{id}`
+
+`{id}`: Número do console na lista
+
+Argumentos:
+
+    * query - Pesquisa que deve ser feita(suporta regex)
